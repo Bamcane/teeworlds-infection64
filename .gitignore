@@ -16,3 +16,23 @@ freetype.dll
 autoexec.cfg
 infection*
 stats.db
+
+Infection-Server*
+
+# CMake
+data
+!/data
+src
+!/src
+
+*.ninja
+.ninja*
+CMakeCache.txt
+CMakeFiles/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+.vscode

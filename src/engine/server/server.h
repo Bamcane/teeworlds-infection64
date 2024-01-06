@@ -125,9 +125,12 @@ public:
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
 		void Reset();
+
+		bool m_CustClt;
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
+	CIdMap m_aIdMap[MAX_CLIENTS];
 
 	CSnapshotDelta m_SnapshotDelta;
 	CSnapshotBuilder m_SnapshotBuilder;
@@ -153,6 +156,10 @@ public:
 	unsigned m_CurrentMapCrc;
 	unsigned char *m_pCurrentMapData;
 	int m_CurrentMapSize;
+
+	bool m_ServerInfoHighLoad;
+	int64 m_ServerInfoFirstRequest;
+	int m_ServerInfoNumRequests;
 
 	CDemoRecorder m_DemoRecorder;
 	CRegister m_Register;
@@ -207,7 +214,8 @@ public:
 
 	void ProcessClientPacket(CNetChunk *pPacket);
 
-	void SendServerInfo(const NETADDR *pAddr, int Token);
+	void SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type);
+	void SendServerInfo(const NETADDR *pAddr, int Token, int Type, bool SendClients);
 	void UpdateServerInfo();
 
 	void PumpNetwork();
@@ -237,6 +245,9 @@ public:
 	virtual void SnapFreeID(int ID);
 	virtual void *SnapNewItem(int Type, int ID, int Size);
 	void SnapSetStaticsize(int ItemType, int Size);
+
+	virtual CIdMap* GetIdMap(int ClientID);
+	virtual void SetCustClt(int ClientID);
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "gameworld.h"
 #include "entity.h"
 #include "gamecontext.h"
+#include <engine/shared/config.h>
 
 //////////////////////////////////////////////////
 // game world
@@ -186,6 +187,8 @@ void CGameWorld::Tick()
 	}
 
 	RemoveEntities();
+
+	UpdatePlayerMaps();
 }
 
 
@@ -244,4 +247,79 @@ CCharacter *CGameWorld::ClosestCharacter(vec2 Pos, float Radius, CEntity *pNotTh
 	}
 
 	return pClosest;
+}
+
+
+bool distCompare(std::pair<float,int> a, std::pair<float,int> b)
+{
+	return (a.first < b.first);
+}
+
+void CGameWorld::UpdatePlayerMaps()
+{
+	if (Server()->Tick() % g_Config.m_SvMapUpdateRate != 0) return;
+
+	std::vector<std::pair<float,int>> dist;
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		dist.clear();
+		
+		if (!Server()->ClientIngame(i)) 
+			continue;
+		int MaxSnap = VANILLA_MAX_CLIENTS;
+		CIdMap* map = Server()->GetIdMap(i);
+
+		// compute distances
+		for (int j = 0; j < MAX_CLIENTS; j++)
+		{
+			dist.push_back(std::make_pair(1e10, j));
+			if (!Server()->ClientIngame(j))
+				continue;
+
+			dist[j].first = distance(GameServer()->m_apPlayers[i]->m_ViewPos, GameServer()->m_apPlayers[j]->m_ViewPos);
+		}
+		// always send the player himself
+		dist[i].first = 0;
+
+		std::sort(dist.begin(), dist.end());
+
+		for (int j = 0; j < (int) dist.size(); j ++)
+		{
+			if (dist[j].first > 1e9) 
+			{			
+				for (auto k : (*map))
+				{
+					if (k.second == dist[j].second)
+					{
+						(*map).erase(k.first);
+						break;
+					}
+				}
+			}
+		}
+
+		int mcount = 0;
+		for (int j = 0; j < MaxSnap - 1; j++)
+		{
+			bool Found = false;
+			for (auto k : (*map))
+			{
+				if (k.second == dist[j].second)
+				{
+					Found = true;
+					break;
+				}
+			}
+			if(Found)
+				continue;
+
+			while((*map).count(mcount) && mcount < MaxSnap - 1) 
+				mcount ++;
+			if(mcount < MaxSnap - 1)
+				(*map)[mcount] = dist[j].second;
+			else
+				break;
+		}
+		(*map).erase(MaxSnap - 1);
+	}
 }

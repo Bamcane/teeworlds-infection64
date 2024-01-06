@@ -48,6 +48,7 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_Armor = 0;
 
     m_SpawnProtectIndicatorID = Server()->SnapNewID();
+	m_WallStartID = Server()->SnapNewID();
 }
 
 void CCharacter::ResetWall()
@@ -107,6 +108,12 @@ void CCharacter::Destroy()
     {
         Server()->SnapFreeID(m_SpawnProtectIndicatorID);
         m_SpawnProtectIndicatorID = -1;
+    }
+
+    if(m_WallStartID >= 0)
+    {
+        Server()->SnapFreeID(m_WallStartID);
+        m_WallStartID = -1;
     }
 }
 
@@ -964,7 +971,11 @@ void CCharacter::Snap(int SnappingClient)
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, m_pPlayer->GetCID(), sizeof(CNetObj_Character)));
+	int id = m_pPlayer->GetCID();
+	if (!Server()->Translate(id, SnappingClient)) 
+		return;
+
+	CNetObj_Character *pCharacter = static_cast<CNetObj_Character *>(Server()->SnapNewItem(NETOBJTYPE_CHARACTER, id, sizeof(CNetObj_Character)));
 	if(!pCharacter)
 		return;
 
@@ -1001,6 +1012,12 @@ void CCharacter::Snap(int SnappingClient)
         m_EmoteStop = -1;
 	}
 
+	if(pCharacter->m_HookedPlayer != -1)
+	{
+		if(!Server()->Translate(pCharacter->m_HookedPlayer, SnappingClient))
+			pCharacter->m_HookedPlayer = -1;
+	}
+
 	pCharacter->m_Emote = m_EmoteType;
 
 	pCharacter->m_AmmoCount = 0;
@@ -1028,4 +1045,17 @@ void CCharacter::Snap(int SnappingClient)
 	}
 
 	pCharacter->m_PlayerFlags = GetPlayer()->m_PlayerFlags;
+
+	if(m_WallStart != vec2(0, 0))
+	{
+		CNetObj_Laser *pStartObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, m_WallStartID, sizeof(CNetObj_Laser)));
+		if(!pStartObj)
+			return;
+
+		pStartObj->m_X = (int)m_WallStart.x;
+		pStartObj->m_Y = (int)m_WallStart.y;
+		pStartObj->m_FromX = (int)m_WallStart.x;
+		pStartObj->m_FromY = (int)m_WallStart.y;
+		pStartObj->m_StartTick = Server()->Tick();
+	}
 }

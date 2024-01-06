@@ -5,6 +5,13 @@
 #include "kernel.h"
 #include "message.h"
 
+#include <game/generated/protocol.h>
+#include <engine/shared/protocol.h>
+
+#include <map>
+
+using CIdMap = std::map<int, int>;
+
 class IServer : public IInterface
 {
 	MACRO_INTERFACE("server", 0)
@@ -20,6 +27,7 @@ public:
 	{
 		const char *m_pName;
 		int m_Latency;
+		bool m_CustClt;
 	};
 
 	int Tick() const { return m_CurrentGameTick; }
@@ -38,10 +46,94 @@ public:
 	template<class T>
 	int SendPackMsg(T *pMsg, int Flags, int ClientID)
 	{
+		int result = 0;
+		T tmp;
+		if (ClientID == -1)
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(ClientIngame(i))
+				{
+					mem_copy(&tmp, pMsg, sizeof(T));
+					result = SendPackMsgTranslate(&tmp, Flags, i);
+				}
+		} else {
+			mem_copy(&tmp, pMsg, sizeof(T));
+			result = SendPackMsgTranslate(&tmp, Flags, ClientID);
+		}
+		return result;
+	}
+
+	template<class T>
+	int SendPackMsgTranslate(T *pMsg, int Flags, int ClientID)
+	{
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	int SendPackMsgTranslate(CNetMsg_Sv_Emoticon *pMsg, int Flags, int ClientID)
+	{
+		return Translate(pMsg->m_ClientID, ClientID) && SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	char msgbuf[1000];
+
+	int SendPackMsgTranslate(CNetMsg_Sv_Chat *pMsg, int Flags, int ClientID)
+	{
+		if (pMsg->m_ClientID >= 0 && !Translate(pMsg->m_ClientID, ClientID))
+		{
+			str_format(msgbuf, sizeof(msgbuf), "%s: %s", ClientName(pMsg->m_ClientID), pMsg->m_pMessage);
+			pMsg->m_pMessage = msgbuf;
+			pMsg->m_ClientID = VANILLA_MAX_CLIENTS - 1;
+		}
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	int SendPackMsgTranslate(CNetMsg_Sv_KillMsg *pMsg, int Flags, int ClientID)
+	{
+		if (!Translate(pMsg->m_Victim, ClientID)) return 0;
+		if (!Translate(pMsg->m_Killer, ClientID)) pMsg->m_Killer = pMsg->m_Victim;
+		return SendPackMsgOne(pMsg, Flags, ClientID);
+	}
+
+	template<class T>
+	int SendPackMsgOne(T *pMsg, int Flags, int ClientID)
+	{
 		CMsgPacker Packer(pMsg->MsgID());
 		if(pMsg->Pack(&Packer))
 			return -1;
 		return SendMsg(&Packer, Flags, ClientID);
+	}
+
+	bool Translate(int& target, int client)
+	{
+		CClientInfo info;
+		GetClientInfo(client, &info);
+		if (info.m_CustClt)
+			return true;
+		CIdMap* map = GetIdMap(client);
+		bool found = false;
+		for (auto i : (*map))
+		{
+			if (target == i.second)
+			{
+				target = i.first;
+				found = true;
+				break;
+			}
+		}
+		return found;
+	}
+
+	bool ReverseTranslate(int& target, int client)
+	{
+		CClientInfo info;
+		GetClientInfo(client, &info);
+		if (info.m_CustClt)
+			return true;
+		CIdMap* map = GetIdMap(client);
+		if ((*map).count(target))
+			return false;
+		target = (*map)[target];
+		return true;
 	}
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
@@ -66,6 +158,9 @@ public:
 
 	virtual void DemoRecorder_HandleAutoStart() = 0;
 	virtual bool DemoRecorder_IsRecording() = 0;
+
+	virtual CIdMap* GetIdMap(int ClientID) = 0;
+	virtual void SetCustClt(int ClientID) = 0;
 };
 
 class IGameServer : public IInterface

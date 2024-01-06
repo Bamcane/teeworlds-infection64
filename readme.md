@@ -1,4 +1,4 @@
-# Teeworlds Infection Mod #
+# Teeworlds Infection64 Mod #
 This infection mod is a FOSS clone of original Gravity's infection mod. Based on Teeworlds 0.6.4 this mod is more stable and more secure. The purpose of this mod is to remain as close as possible from the original one. However some extra features have been added and there are more to come.
 
 
@@ -9,6 +9,9 @@ This infection mod is a FOSS clone of original Gravity's infection mod. Based on
 * Fast emote bubble display
 * Eye-emotes change with bubble
 * Shotgun knockback
+
+### New features 64 ##
+* Support 64 players
 
 ## Security ##
 * east's IP spoofing protection (Only for DDNet and H-Client users)

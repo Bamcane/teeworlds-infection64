@@ -7,6 +7,7 @@ class CWall: public CEntity {
 public:
     
     CWall(CGameWorld *pWorld, vec2 From, vec2 To, int Owner);
+    ~CWall();
     
     virtual void Reset();
     virtual void Tick();
@@ -18,6 +19,8 @@ public:
     int m_Owner;
     int m_StartTick;
     bool m_Active;
+    
+    int m_StartID;
     vec2 m_To;
 };
 

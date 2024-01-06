@@ -72,6 +72,8 @@ public:
 	class CWall *m_pWall;
 	vec2 m_WallStart;
 
+	int m_WallStartID;
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;

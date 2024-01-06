@@ -15,6 +15,13 @@ CWall::CWall(CGameWorld *pWorld, vec2 From, vec2 To, int Owner):
                     sin(Angle) * g_Config.m_InfWallLength) + From;
     }
     pWorld->InsertEntity(this);
+
+    m_StartID = Server()->SnapNewID();
+}
+
+CWall::~CWall()
+{
+    Server()->SnapFreeID(m_StartID);
 }
 
 bool CWall::HitCharacter(vec2 From, vec2 To, CCharacter *pCharacter) {
@@ -92,4 +99,14 @@ void CWall::Snap(int SnappingClient) {
 	pObj->m_FromX = (int)m_Pos.x;
 	pObj->m_FromY = (int)m_Pos.y;
 	pObj->m_StartTick = Server()->Tick();
+
+	CNetObj_Laser *pStartObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, m_StartID, sizeof(CNetObj_Laser)));
+	if(!pStartObj)
+		return;
+
+    pStartObj->m_X = (int)m_Pos.x;
+    pStartObj->m_Y = (int)m_Pos.y;
+	pStartObj->m_FromX = (int)m_Pos.x;
+	pStartObj->m_FromY = (int)m_Pos.y;
+	pStartObj->m_StartTick = Server()->Tick();
 }

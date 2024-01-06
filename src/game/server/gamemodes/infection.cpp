@@ -9,7 +9,7 @@
 
 CGameControllerInfection::CGameControllerInfection(class CGameContext *pGameServer)
 : IGameController(pGameServer) {
-	m_pGameType = "Infection+";
+	m_pGameType = "Infection64 iDM";
 	m_BroadcastTime = 0;
 	m_NextIdToPick = 0;
 }
@@ -30,18 +30,24 @@ void CGameControllerInfection::DoWincheck() {
             Humans ++;
     }
 
-    if (Humans + Zombies < 2) {
+    if(Humans + Zombies < 2) 
+	{
         m_SuddenDeath = true;
         m_Warmup = 0;
-        GameServer()->SendBroadcast("At least 2 players required to start playing", -1);
+		if((Server()->Tick() % 50) == 0)
+       		GameServer()->SendBroadcast("At least 2 players required to start playing", -1);
         return;
-    } else if (m_SuddenDeath) {
+    } 
+	else if(m_SuddenDeath) 
+	{
         StartRound();
         return;
     }
 
-    if (m_GameOverTick == -1 && !m_Warmup && !GameServer()->m_World.m_ResetRequested) {
-        if (!Humans || !Zombies) {
+    if(m_GameOverTick == -1 && !m_Warmup && !GameServer()->m_World.m_ResetRequested) 
+	{
+        if(!Humans || !Zombies) 
+		{
             EndRound();
             return;
         }

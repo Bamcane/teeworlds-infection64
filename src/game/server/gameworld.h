@@ -144,6 +144,8 @@ public:
 
 	*/
 	void Tick();
+	
+	void UpdatePlayerMaps();
 };
 
 #endif

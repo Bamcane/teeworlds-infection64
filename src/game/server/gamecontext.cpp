@@ -769,6 +769,19 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
                     str_copy(pEmoteType, pMsg->m_pMessage + 6, 256);
                     EyeEmote(ClientID, pEmoteType);
                 }
+                else if(str_comp_nocase_num(pMsg->m_pMessage+1, "about", 5) == 0 || str_comp_nocase_num(pMsg->m_pMessage+1, "info", 5) == 0)
+                {
+                    SendChatTarget(ClientID, "Infection+ Mod by Gwilherm");
+                    SendChatTarget(ClientID, "Infection64(+) Mod by Bamcane");
+                    SendChatTarget(ClientID, "Open source on github.com/Bamcane/teeworlds-infection64");
+                }
+				else if(str_comp_nocase_num(pMsg->m_pMessage+1, "cmdlist", 7) == 0)
+                {
+					if(g_Config.m_SvDatabase)
+                    	SendChatTarget(ClientID, "Chat commands: about, cmdlist, emote, info, rank, top5, w, whisper");
+					else 
+                    	SendChatTarget(ClientID, "Chat commands: about, cmdlist, emote, info, w, whisper");
+                }
 				else
                 {
 					if(g_Config.m_SvDatabase){
